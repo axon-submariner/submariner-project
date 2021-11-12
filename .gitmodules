@@ -1,0 +1,18 @@
+[submodule "shipyard"]
+	path = shipyard
+	url = git@github.com:submariner-io/shipyard.git
+[submodule "admiral"]
+	path = admiral
+	url = git@github.com:submariner-io/admiral.git
+[submodule "lighthouse"]
+	path = lighthouse
+	url = git@github.com:submariner-io/lighthouse.git
+[submodule "submariner"]
+	path = submariner
+	url = git@github.com:submariner-io/submariner.git
+[submodule "submariner-operator"]
+	path = submariner-operator
+	url = git@github.com:submariner-io/submariner-operator.git
+[submodule "cloud-prepare"]
+	path = cloud-prepare
+	url = git@github.com:submariner-io/cloud-prepare.git
