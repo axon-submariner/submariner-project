@@ -1,0 +1,54 @@
+# -*- makefile -*-
+
+VERSION ?= devel
+GO ?= go
+GOARCH = $(shell $(GO) env GOARCH)
+GOEXE = $(shell $(GO) env GOEXE)
+GOOS = $(shell $(GO) env GOOS)
+CRD_OPTIONS ?= "crd:crdVersions=v1,trivialVersions=false"
+
+bin/subctl: bin/subctl-$(VERSION)-$(GOOS)-$(GOARCH)$(GOEXE)
+	ln -sf $(<F) $@
+
+# Versions may include hyphens so it's easier to use $(VERSION) than to extract them from the target
+bin/subctl-%: generate-embeddedyamls $(shell find pkg/subctl/ -name "*.go")
+	mkdir -p $(@D)
+	target=$@; \
+	target=$${target%.exe}; \
+	components=($$(echo $${target//-/ })); \
+	GOOS=$${components[-2]}; \
+	GOARCH=$${components[-1]}; \
+	export GOARCH GOOS; \
+	$(SCRIPTS_DIR)/compile.sh \
+		--ldflags "-X github.com/submariner-io/submariner-operator/pkg/version.Version=$(VERSION) \
+			   -X=github.com/submariner-io/submariner-operator/api.DefaultSubmarinerOperatorVersion=$${DEFAULT_IMAGE_VERSION#v}" \
+		--noupx $@ ./pkg/subctl/main.go $(BUILD_ARGS)
+
+generate-embeddedyamls: generate pkg/subctl/operator/common/embeddedyamls/yamls.go
+
+pkg/subctl/operator/common/embeddedyamls/yamls.go: pkg/subctl/operator/common/embeddedyamls/generators/yamls2go.go deploy/crds/submariner.io_servicediscoveries.yaml deploy/crds/submariner.io_brokers.yaml deploy/crds/submariner.io_submariners.yaml deploy/submariner/crds/submariner.io_clusters.yaml deploy/submariner/crds/submariner.io_endpoints.yaml deploy/submariner/crds/submariner.io_gateways.yaml $(shell find deploy/ -name "*.yaml") $(shell find config/rbac/ -name "*.yaml")
+	$(GO) generate pkg/subctl/operator/common/embeddedyamls/generate.go
+
+# Operator CRDs
+CONTROLLER_GEN := $(CURDIR)/bin/controller-gen
+$(CONTROLLER_GEN):
+	mkdir -p $(@D)
+	$(GO) build -o $@ sigs.k8s.io/controller-tools/cmd/controller-gen
+
+deploy/crds/submariner.io_servicediscoveries.yaml: $(CONTROLLER_GEN) ./api/submariner/v1alpha1/servicediscovery_types.go
+	cd api && $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./..." output:crd:artifacts:config=../deploy/crds
+	test -f $@
+
+deploy/crds/submariner.io_brokers.yaml deploy/crds/submariner.io_submariners.yaml: $(CONTROLLER_GEN) ./api/submariner/v1alpha1/submariner_types.go
+	cd api && $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./..." output:crd:artifacts:config=../deploy/crds
+	test -f $@
+
+# Submariner CRDs
+deploy/submariner/crds/submariner.io_clusters.yaml deploy/submariner/crds/submariner.io_endpoints.yaml deploy/submariner/crds/submariner.io_gateways.yaml: $(CONTROLLER_GEN)
+	mkdir -p $(@D)
+	cd ../submariner/pkg/apis && $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./..." output:crd:dir=../../../submariner-operator/deploy/submariner/crds
+	test -f $@
+
+# Generate code
+generate: $(CONTROLLER_GEN)
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt,year=$(shell date +"%Y")" paths="./..."

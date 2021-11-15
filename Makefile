@@ -9,21 +9,22 @@ DAPPER_OUTPUT=$(CURDIR)/output
 export DAPPER_OUTPUT
 
 CLUSTERS_ARGS=--globalnet
-DEPLOY_ARGS=--globalnet
+DEPLOY_ARGS=--globalnet --deploytool helm
 SETTINGS=--settings $(CURDIR)/shipyard/.shipyard.e2e.yml
 
 REPO=localhost:5000
 IMAGE_VER=local
 PRELOADS=lighthouse-agent lighthouse-coredns submariner-gateway submariner-globalnet submariner-route-agent submariner-networkplugin-syncer submariner-operator
 
+HELM_VERSION=v3.4.1
 YQ_VERSION=4.14.1
-
+ARCH=amd64
 
 ##@ Prepare
 
 init:		## Initialise submodules
 
-modreplace:	## Update go.mod files with local replacements
+mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
 	(cd cloud-prepare; go mod edit -replace=github.com/submariner-io/admiral=../admiral)
 	(cd lighthouse; go mod edit -replace=github.com/submariner-io/admiral=../admiral)
@@ -37,8 +38,16 @@ modreplace:	## Update go.mod files with local replacements
 	(cd submariner-operator; go mod edit -replace=github.com/submariner-io/submariner=../submariner)
 	(cd submariner-operator; go mod edit -replace=github.com/submariner-io/submariner/pkg/apis=../submariner/pkg/apis)
 
+mod-download:	## Download all module dependencies to go module cache
+	(cd admiral; go mod download)
+	(cd cloud-prepare; go mod download)
+	(cd lighthouse; go mod download)
+	(cd submariner; go mod download)
+	(cd submariner-operator; go mod download)
+
 prereqs:	## Download required utilities
-	[ -x $(BINDIR)/yq ] || curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq
+	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
+	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
 
 ##@ Build
 
@@ -58,6 +67,11 @@ build-submariner:	## Build the submariner gateway binaries
 build-operator:		## Build the operator binaries
 	(cd submariner-operator; $(SCRIPTS_DIR)/compile.sh bin/submariner-operator main.go)
 
+build-subctl:	submariner-operator/bin/subctl	## Build the subctl binary
+
+submariner-operator/bin/subctl:		Makefile.subctl
+	mkdir -p submariner-operator/build
+	(cd submariner-operator; $(MAKE) -f ../$< bin/subctl)
 
 images:	## Build all the images
 images:	image-lighthouse image-submariner image-operator
@@ -108,6 +122,7 @@ clean:	## Clean up the built artifacts
 	rm -f submariner/bin/linux/amd64/submariner-route-agent
 	rm -f submariner/bin/linux/amd64/submariner-networkplugin-syncer
 	rm -f submariner-operator/bin/submariner-operator
+	rm -f submariner-operator/bin/subctl*
 
 clean-clusters:	## Removes the running kind clusters
 	(cd submariner-operator; $(SCRIPTS_DIR)/cleanup.sh)
