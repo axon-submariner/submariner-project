@@ -9,7 +9,7 @@ DAPPER_OUTPUT=$(CURDIR)/output
 export DAPPER_OUTPUT
 
 CLUSTERS_ARGS=--globalnet
-DEPLOY_ARGS=--globalnet --deploytool helm
+DEPLOY_ARGS=--globalnet
 SETTINGS=--settings $(CURDIR)/shipyard/.shipyard.e2e.yml
 
 REPO=localhost:5000
@@ -20,9 +20,16 @@ HELM_VERSION=v3.4.1
 YQ_VERSION=4.14.1
 ARCH=amd64
 
+all-images:	mod-replace mod-download build images preload-images
+
 ##@ Prepare
 
-init:		## Initialise submodules
+git-init:	## Initialise submodules
+	git submodule update --init
+
+prereqs:	## Download required utilities
+	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
+	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
 
 mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
@@ -45,14 +52,11 @@ mod-download:	## Download all module dependencies to go module cache
 	(cd submariner; go mod download)
 	(cd submariner-operator; go mod download)
 
-prereqs:	## Download required utilities
-	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
-	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
 
 ##@ Build
 
 build:	## Build all the binaries
-build:	build-lighthouse build-submariner build-operator
+build:	build-lighthouse build-submariner build-subctl build-operator
 
 build-lighthouse:	## Build the lighthouse binaries
 	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh bin/lighthouse-agent pkg/agent/main.go)
@@ -92,7 +96,7 @@ image-operator:		## Build the submariner operator image
 	(cd submariner-operator; docker build -t $(REPO)/submariner-operator:$(IMAGE_VER) -f package/Dockerfile.submariner-operator .)
 
 preload-images:		## Push images to development repository
-	for repo in $(PRELOADS); do docker push $(REPO)$$repo:$(IMAGE_VER); done
+	for repo in $(PRELOADS); do docker push $(REPO)/$$repo:$(IMAGE_VER); done
 
 ##@ Deployment
 
