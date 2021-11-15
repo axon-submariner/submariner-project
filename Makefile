@@ -104,6 +104,8 @@ clusters:	## Create kind clusters that can be used for testing
 	@mkdir -p $(DAPPER_OUTPUT)
 	(cd submariner-operator; $(SCRIPTS_DIR)/clusters.sh $(CLUSTERS_ARGS) $(SETTINGS) )
 
+deploy:	export DEV_VERSION=devel
+deploy:	export CUTTING_EDGE=devel
 deploy:		## Deploy submariner onto kind clusters
 	./deploy.sh $(DEPLOY_ARGS) $(SETTINGS)
 
