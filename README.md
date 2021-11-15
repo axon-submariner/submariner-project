@@ -1,4 +1,4 @@
-* submariner-project
+# submariner-project
 
 ```
 Usage:
