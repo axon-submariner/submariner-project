@@ -26,25 +26,32 @@ bin/subctl-%: generate-embeddedyamls $(shell find pkg/subctl/ -name "*.go")
 
 generate-embeddedyamls: generate pkg/subctl/operator/common/embeddedyamls/yamls.go
 
-pkg/subctl/operator/common/embeddedyamls/yamls.go: pkg/subctl/operator/common/embeddedyamls/generators/yamls2go.go deploy/crds/submariner.io_servicediscoveries.yaml deploy/crds/submariner.io_brokers.yaml deploy/crds/submariner.io_submariners.yaml deploy/submariner/crds/submariner.io_clusters.yaml deploy/submariner/crds/submariner.io_endpoints.yaml deploy/submariner/crds/submariner.io_gateways.yaml $(shell find deploy/ -name "*.yaml") $(shell find config/rbac/ -name "*.yaml")
+OPERATOR_CRDS=\
+deploy/crds/submariner.io_servicediscoveries.yaml \
+deploy/crds/submariner.io_brokers.yaml \
+deploy/crds/submariner.io_submariners.yaml
+
+SUBMARINER_CRDS=\
+deploy/submariner/crds/submariner.io_clusters.yaml \
+deploy/submariner/crds/submariner.io_endpoints.yaml \
+deploy/submariner/crds/submariner.io_gateways.yaml
+
+pkg/subctl/operator/common/embeddedyamls/yamls.go: pkg/subctl/operator/common/embeddedyamls/generators/yamls2go.go $(OPERATOR_CRDS) $(SUBMARINER_CRDS) $(shell find deploy/ -name "*.yaml") $(shell find config/rbac/ -name "*.yaml")
 	$(GO) generate pkg/subctl/operator/common/embeddedyamls/generate.go
 
-# Operator CRDs
 CONTROLLER_GEN := $(CURDIR)/bin/controller-gen
 $(CONTROLLER_GEN):
 	mkdir -p $(@D)
 	$(GO) build -o $@ sigs.k8s.io/controller-tools/cmd/controller-gen
 
-deploy/crds/submariner.io_servicediscoveries.yaml: $(CONTROLLER_GEN) ./api/submariner/v1alpha1/servicediscovery_types.go
-	cd api && $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./..." output:crd:artifacts:config=../deploy/crds
-	test -f $@
 
-deploy/crds/submariner.io_brokers.yaml deploy/crds/submariner.io_submariners.yaml: $(CONTROLLER_GEN) ./api/submariner/v1alpha1/submariner_types.go
+# Operator CRDs
+$(OPERATOR_CRDS): $(CONTROLLER_GEN) ./api/submariner/v1alpha1/servicediscovery_types.go ./api/submariner/v1alpha1/submariner_types.go
 	cd api && $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./..." output:crd:artifacts:config=../deploy/crds
 	test -f $@
 
 # Submariner CRDs
-deploy/submariner/crds/submariner.io_clusters.yaml deploy/submariner/crds/submariner.io_endpoints.yaml deploy/submariner/crds/submariner.io_gateways.yaml: $(CONTROLLER_GEN)
+$(SUBMARINER_CRDS): $(CONTROLLER_GEN)
 	mkdir -p $(@D)
 	cd ../submariner/pkg/apis && $(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./..." output:crd:dir=../../../submariner-operator/deploy/submariner/crds
 	test -f $@

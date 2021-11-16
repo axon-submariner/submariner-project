@@ -14,7 +14,7 @@ SETTINGS=--settings $(CURDIR)/shipyard/.shipyard.e2e.yml
 
 REPO=localhost:5000
 IMAGE_VER=local
-PRELOADS=lighthouse-agent lighthouse-coredns submariner-gateway submariner-globalnet submariner-route-agent submariner-networkplugin-syncer submariner-operator
+PRELOADS=lighthouse-agent lighthouse-coredns submariner-gateway submariner-globalnet submariner-route-agent submariner-networkplugin-syncer submariner-operator nettest
 
 HELM_VERSION=v3.4.1
 YQ_VERSION=4.14.1
@@ -30,6 +30,7 @@ git-init:	## Initialise submodules
 prereqs:	## Download required utilities
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
+	which upx
 
 mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
@@ -46,11 +47,11 @@ mod-replace:	## Update go.mod files with local replacements
 	(cd submariner-operator; go mod edit -replace=github.com/submariner-io/submariner/pkg/apis=../submariner/pkg/apis)
 
 mod-download:	## Download all module dependencies to go module cache
-	(cd admiral; go mod download)
-	(cd cloud-prepare; go mod download)
-	(cd lighthouse; go mod download)
-	(cd submariner; go mod download)
-	(cd submariner-operator; go mod download)
+	(cd admiral; go mod download; go mod tidy)
+	(cd cloud-prepare; go mod download; go mod tidy)
+	(cd lighthouse; go mod download; go mod tidy)
+	(cd submariner; go mod download; go mod tidy)
+	(cd submariner-operator; go mod download; go mod tidy)
 
 
 ##@ Build
@@ -95,6 +96,9 @@ image-submariner:	## Build the submariner gateway images
 image-operator:		## Build the submariner operator image
 	(cd submariner-operator; docker build -t $(REPO)/submariner-operator:$(IMAGE_VER) -f package/Dockerfile.submariner-operator .)
 
+image-nettest:		## Buuld the submariner nettest image
+	(cd shipyard; docker build -t $(REPO)/nettest:$(IMAGE_VER) -f package/Dockerfile.nettest .)
+
 preload-images:		## Push images to development repository
 	for repo in $(PRELOADS); do docker push $(REPO)/$$repo:$(IMAGE_VER); done
 
@@ -110,7 +114,7 @@ deploy:		## Deploy submariner onto kind clusters
 	./deploy.sh $(DEPLOY_ARGS) $(SETTINGS)
 
 undeploy:	## Clean submariner deployment from clusters
-	for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k delete ns submariner-operator; kubectl --kubeconfig $$k delete ns submariner-k8s-broker; done
+	-for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k delete ns submariner-operator; kubectl --kubeconfig $$k delete ns submariner-k8s-broker; done
 
 pod-status:	## Show status of pods in kind clusters
 	for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k get pod -A; done
@@ -129,6 +133,9 @@ clean:	## Clean up the built artifacts
 	rm -f submariner/bin/linux/amd64/submariner-networkplugin-syncer
 	rm -f submariner-operator/bin/submariner-operator
 	rm -f submariner-operator/bin/subctl*
+	rm -rf submariner-operator/deploy/crds
+	rm -rf submariner-operator/deploy/submariner
+	rm -f submariner-operator/pkg/subctl/operator/common/embeddedyamls/yamls.go
 
 clean-clusters:	## Removes the running kind clusters
 	(cd submariner-operator; $(SCRIPTS_DIR)/cleanup.sh)
