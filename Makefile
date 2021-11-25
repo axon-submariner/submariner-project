@@ -120,7 +120,7 @@ NAMESPACES ?= submariner-operator submariner-k8s-broker
 undeploy:	## Clean submariner deployment from clusters
 	-for k in output/kubeconfigs/*; do for n in $(NAMESPACES); do kubectl --kubeconfig $$k delete ns $$n; done; done
 
-pod-status:	## Show status of pods in kind clusters
+pod-status:	import-kubeconfigs ## Show status of pods in kind clusters
 	for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k get pod -A; done
 
 ##@ General
