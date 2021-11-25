@@ -3,8 +3,10 @@
 VERSION ?= devel
 GO ?= go
 GOARCH = $(shell $(GO) env GOARCH)
+export GOARCH
 GOEXE = $(shell $(GO) env GOEXE)
 GOOS = $(shell $(GO) env GOOS)
+export GOOS
 CRD_OPTIONS ?= "crd:crdVersions=v1,trivialVersions=false"
 
 bin/subctl: bin/subctl-$(VERSION)-$(GOOS)-$(GOARCH)$(GOEXE)
@@ -13,16 +15,10 @@ bin/subctl: bin/subctl-$(VERSION)-$(GOOS)-$(GOARCH)$(GOEXE)
 # Versions may include hyphens so it's easier to use $(VERSION) than to extract them from the target
 bin/subctl-%: generate-embeddedyamls $(shell find pkg/subctl/ -name "*.go")
 	mkdir -p $(@D)
-	target=$@; \
-	target=$${target%.exe}; \
-	components=($$(echo $${target//-/ })); \
-	GOOS=$${components[-2]}; \
-	GOARCH=$${components[-1]}; \
-	export GOARCH GOOS; \
 	$(SCRIPTS_DIR)/compile.sh \
 		--ldflags "-X github.com/submariner-io/submariner-operator/pkg/version.Version=$(VERSION) \
 			   -X=github.com/submariner-io/submariner-operator/api.DefaultSubmarinerOperatorVersion=$${DEFAULT_IMAGE_VERSION#v}" \
-		--noupx $@ ./pkg/subctl/main.go $(BUILD_ARGS)
+		--noupx --debug $@ ./pkg/subctl/main.go $(BUILD_ARGS)
 
 generate-embeddedyamls: generate pkg/subctl/operator/common/embeddedyamls/yamls.go
 
