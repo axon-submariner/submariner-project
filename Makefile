@@ -115,11 +115,17 @@ deploy:	export CUTTING_EDGE=devel
 deploy:		## Deploy submariner onto kind clusters
 	./deploy.sh $(DEPLOY_ARGS) $(SETTINGS)
 
+KUBECONFIG_DIR := ./output/kubeconfigs
 undeploy:	## Clean submariner deployment from clusters
-	-for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k delete ns submariner-operator; kubectl --kubeconfig $$k delete ns submariner-k8s-broker; done
+	-for k in $(KUBECONFIG_DIR)/*; do kubectl --kubeconfig $$k delete ns submariner-operator; kubectl --kubeconfig $$k delete ns submariner-k8s-broker; done
 
-pod-status:	## Show status of pods in kind clusters
-	for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k get pod -A; done
+import-kubeconfigs: $(KUBECONFIG_DIR)/cluster1 $(KUBECONFIG_DIR)/cluster2
+$(KUBECONFIG_DIR)/%:	## import kubeconfigs created by submariner-operator's make deploy
+	@mkdir -p $(KUBECONFIG_DIR)
+	kind export kubeconfig --kubeconfig $@ --name $* 
+
+pod-status:	import-kubeconfigs ## Show status of pods in kind clusters
+	for k in $(KUBECONFIG_DIR)/*; do kubectl --kubeconfig $$k get pod -A; done
 
 ##@ General
 
