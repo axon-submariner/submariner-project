@@ -30,7 +30,7 @@ git-init:	## Initialise submodules
 prereqs:	## Download required utilities
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
-	which upx
+	@which upx || echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'"
 
 mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
