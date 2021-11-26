@@ -72,11 +72,9 @@ build-submariner:	## Build the submariner gateway binaries
 build-operator:		## Build the operator binaries
 	(cd submariner-operator; $(SCRIPTS_DIR)/compile.sh bin/submariner-operator main.go)
 
-build-subctl:	submariner-operator/bin/subctl	## Build the subctl binary
-
-submariner-operator/bin/subctl:		Makefile.subctl
+build-subctl:	Makefile.subctl	## Build the subctl binary
 	mkdir -p submariner-operator/build
-	(cd submariner-operator; $(MAKE) -f ../$< bin/subctl)
+	cd submariner-operator && $(MAKE) -f ../$< bin/subctl
 
 images:	## Build all the images
 images:	image-lighthouse image-submariner image-operator
