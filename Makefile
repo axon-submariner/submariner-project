@@ -27,7 +27,10 @@ all-images:	mod-replace mod-download build images preload-images
 git-init:	## Initialise submodules
 	git submodule update --init
 
-prereqs:	## Download required utilities
+$(BINDIR):
+	[ -x $(BINDIR) ] || mkdir -p $(BINDIR)
+
+prereqs: $(BINDIR)	## Download required utilities
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
 	@which upx || echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'"
@@ -46,12 +49,11 @@ mod-replace:	## Update go.mod files with local replacements
 	(cd submariner-operator; go mod edit -replace=github.com/submariner-io/submariner=../submariner)
 	(cd submariner-operator; go mod edit -replace=github.com/submariner-io/submariner/pkg/apis=../submariner/pkg/apis)
 
-mod-download:	## Download all module dependencies to go module cache
-	(cd admiral; go mod download; go mod tidy)
-	(cd cloud-prepare; go mod download; go mod tidy)
-	(cd lighthouse; go mod download; go mod tidy)
-	(cd submariner; go mod download; go mod tidy)
-	(cd submariner-operator; go mod download; go mod tidy)
+mod-download: mod-download-admiral mod-download-cloud-prepare mod-download-lighthouse
+mod-download: mod-download-submariner mod-download-submariner-operator
+
+mod-download-%: ## Download all module dependencies to go module cache
+	(cd $*; go mod download; go mod tidy)
 
 
 ##@ Build
@@ -77,7 +79,7 @@ build-subctl:	Makefile.subctl	## Build the subctl binary
 	cd submariner-operator && $(MAKE) -f ../$< bin/subctl
 
 images:	## Build all the images
-images:	image-lighthouse image-submariner image-operator
+images:	image-lighthouse image-submariner image-operator image-nettest
 
 image-lighthouse:	## Build the lighthouse images
 	(cd lighthouse; docker build -t $(REPO)/lighthouse-agent:$(IMAGE_VER) -f package/Dockerfile.lighthouse-agent .)
@@ -94,7 +96,7 @@ image-submariner:	## Build the submariner gateway images
 image-operator:		## Build the submariner operator image
 	(cd submariner-operator; docker build -t $(REPO)/submariner-operator:$(IMAGE_VER) -f package/Dockerfile.submariner-operator .)
 
-image-nettest:		## Buuld the submariner nettest image
+image-nettest:		## Build the submariner nettest image
 	(cd shipyard; docker build -t $(REPO)/nettest:$(IMAGE_VER) -f package/Dockerfile.nettest .)
 
 preload-images:		## Push images to development repository
