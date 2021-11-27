@@ -55,7 +55,6 @@ mod-download: mod-download-submariner mod-download-submariner-operator
 mod-download-%: ## Download all module dependencies to go module cache
 	(cd $*; go mod download; go mod tidy)
 
-
 ##@ Build
 
 build:	## Build all the binaries
@@ -118,7 +117,7 @@ deploy:		## Deploy submariner onto kind clusters
 NAMESPACES ?= submariner-operator submariner-k8s-broker
 
 undeploy:	## Clean submariner deployment from clusters
-	-for k in output/kubeconfigs/*; do for n in $(NAMESPACES); do kubectl --kubeconfig $$k delete ns $$n; done; done
+	-for k in output/kubeconfigs/*; do for n in $(NAMESPACES); do kubectl --kubeconfig $$k delete ns $$n --ignore-not-found; done; done
 
 pod-status:	import-kubeconfigs ## Show status of pods in kind clusters
 	for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k get pod -A; done
