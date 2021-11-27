@@ -92,7 +92,6 @@ mod-download: mod-download-submariner mod-download-submariner-operator
 mod-download-%:
 	(cd $*; go mod download; go mod tidy)
 
-
 ##@ Build
 
 build:	## Build all the binaries
@@ -160,7 +159,7 @@ deploy:		## Deploy submariner onto kind clusters
 NAMESPACES ?= submariner-operator submariner-k8s-broker
 
 undeploy:	## Clean submariner deployment from clusters
-	-for k in output/kubeconfigs/*; do for n in $(NAMESPACES); do kubectl --kubeconfig $$k delete ns $$n; done; done
+	-for k in output/kubeconfigs/*; do for n in $(NAMESPACES); do kubectl --kubeconfig $$k delete ns $$n --ignore-not-found; done; done
 
 pod-status:	## Show status of pods in kind clusters
 	for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k get pod -A; done
