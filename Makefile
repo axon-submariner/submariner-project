@@ -117,7 +117,8 @@ deploy:		## Deploy submariner onto kind clusters
 
 KUBECONFIG_DIR := ./output/kubeconfigs
 undeploy:	## Clean submariner deployment from clusters
-	-for k in $(KUBECONFIG_DIR)/*; do kubectl --kubeconfig $$k delete ns submariner-operator; kubectl --kubeconfig $$k delete ns submariner-k8s-broker; done
+	-for k in $(KUBECONFIG_DIR)/*; do kubectl --kubeconfig $$k delete ns submariner-operator --ignore-not-found; \
+		kubectl --kubeconfig $$k delete ns submariner-k8s-broker --ignore-not-found; done
 
 import-kubeconfigs: $(KUBECONFIG_DIR)/cluster1 $(KUBECONFIG_DIR)/cluster2
 $(KUBECONFIG_DIR)/%:	## import kubeconfigs created by submariner-operator's make deploy
