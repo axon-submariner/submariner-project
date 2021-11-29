@@ -35,9 +35,9 @@ $(BINDIR):
 	[ -x $(BINDIR) ] || mkdir -p $(BINDIR)
 
 prereqs: $(BINDIR)	## Download required utilities
-	@which docker || (echo "Please install Docker Engine: https://docs.docker.com/engine/install" && exit 1)
-	@which go || (echo "Installing golang" && rm -rf go && curl -L "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz" | tar xzf - && mv go/bin/* $(BINDIR) && rm -rf go)
-	@which upx || (echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'" && exit 1)
+	@docker version --format 'Docker v{{.Server.Version}}' || (echo "Please install Docker Engine: https://docs.docker.com/engine/install" && exit 1)
+	@go version || (echo "Installing golang" && rm -rf go && curl -L "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz" | tar xzf - && mv go/bin/* $(BINDIR) && rm -rf go)
+	@upx --version | head -n 1 || (echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'" && exit 1)
 	[ -x $(BINDIR)/ ] || (curl -Lo $(BINDIR)/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}" && chmod a+x $(BINDIR)/kind)
 	[ -x $(BINDIR)/kind ] || (curl -Lo $(BINDIR)/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}" && chmod a+x $(BINDIR)/kind)
 	[ -x $(BINDIR)/kubectl ] || (curl -Lo $(BINDIR)/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && chmod a+x $(BINDIR)/kubectl)
