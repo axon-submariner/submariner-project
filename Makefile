@@ -71,17 +71,17 @@ build:	## Build all the binaries
 build:	build-lighthouse build-submariner build-subctl build-operator
 
 build-lighthouse:	## Build the lighthouse binaries
-	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh bin/lighthouse-agent pkg/agent/main.go)
-	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh bin/lighthouse-coredns pkg/coredns/main.go)
+	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh --noupx bin/lighthouse-agent pkg/agent/main.go)
+	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh --noupx bin/lighthouse-coredns pkg/coredns/main.go)
 
 build-submariner:	## Build the submariner gateway binaries
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-gateway main.go)
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-globalnet pkg/globalnet/main.go)
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-route-agent pkg/routeagent_driver/main.go)
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-networkplugin-syncer pkg/networkplugin-syncer/main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-gateway main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-globalnet pkg/globalnet/main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-route-agent pkg/routeagent_driver/main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-networkplugin-syncer pkg/networkplugin-syncer/main.go)
 
 build-operator:		## Build the operator binaries
-	(cd submariner-operator; $(SCRIPTS_DIR)/compile.sh bin/submariner-operator main.go)
+	(cd submariner-operator; $(SCRIPTS_DIR)/compile.sh --noupx bin/submariner-operator main.go)
 
 build-subctl:	Makefile.subctl	## Build the subctl binary
 	mkdir -p submariner-operator/build
