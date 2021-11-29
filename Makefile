@@ -27,17 +27,20 @@ all-images:	mod-replace mod-download build images
 ##@ Prepare
 
 git-init:	## Initialise submodules
+	echo "If you get permisison errors, please make sure that the ssh key of this machine is properly configured in GitHub.com"
 	git submodule update --init
 
 $(BINDIR):
 	[ -x $(BINDIR) ] || mkdir -p $(BINDIR)
 
 prereqs: $(BINDIR)	## Download required utilities
+	@which go || (echo "Please install golang: https://go.dev/doc/install" && exit 1)
+	@which docker || (echo "Please install Docker Engine: https://docs.docker.com/engine/install" && exit 1)
+	@which upx || (echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'" && exit 1)
 	[ -x $(BINDIR)/kind ] || (curl -Lo $(BINDIR)/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}" && chmod a+x $(BINDIR)/kind)
 	[ -x $(BINDIR)/kubectl ] || (curl -Lo $(BINDIR)/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && chmod a+x $(BINDIR)/kubectl)
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
-	@which upx || echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'"
 
 mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
