@@ -20,7 +20,7 @@ HELM_VERSION=v3.4.1
 YQ_VERSION=4.14.1
 ARCH=amd64
 
-all-images:	mod-replace mod-download build images preload-images
+all-images:	mod-replace mod-download build images
 
 ##@ Prepare
 
@@ -110,11 +110,15 @@ clusters:	## Create kind clusters that can be used for testing
 
 deploy:	export DEV_VERSION=devel
 deploy:	export CUTTING_EDGE=devel
+deploy: export SUBCTL := $(CURDIR)/submariner-operator/bin/subctl
+deploy: export PATH := $(CURDIR)/submariner-operator/bin:$(PATH)
 deploy:		## Deploy submariner onto kind clusters
 	./deploy.sh $(DEPLOY_ARGS) $(SETTINGS)
 
+NAMESPACES ?= submariner-operator submariner-k8s-broker
+
 undeploy:	## Clean submariner deployment from clusters
-	-for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k delete ns submariner-operator; kubectl --kubeconfig $$k delete ns submariner-k8s-broker; done
+	-for k in output/kubeconfigs/*; do for n in $(NAMESPACES); do kubectl --kubeconfig $$k delete ns $$n; done; done
 
 pod-status:	## Show status of pods in kind clusters
 	for k in output/kubeconfigs/*; do kubectl --kubeconfig $$k get pod -A; done
@@ -137,7 +141,11 @@ clean:	## Clean up the built artifacts
 	rm -rf submariner-operator/deploy/submariner
 	rm -f submariner-operator/pkg/subctl/operator/common/embeddedyamls/yamls.go
 
-clean-clusters:	## Removes the running kind clusters
+stop-clusters:	## Removes the running kind clusters
+	-for c in `kind get clusters`; do kind delete cluster --name $$c; done
+	-rm -f output/kubeconfigs/*
+
+stop-all:	## Removes the running kind clusters and kind-registry
 	(cd submariner-operator; $(SCRIPTS_DIR)/cleanup.sh)
 
 
