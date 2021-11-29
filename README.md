@@ -33,3 +33,17 @@ General
   clean-clusters    Removes the running kind clusters
   help              Display this help.
 ```
+
+Command order:
+
+```
+make git-init
+make prereqs
+make mod-replace
+make mod-download
+make build
+make images
+make clusters
+make deploy
+```
+
