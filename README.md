@@ -44,6 +44,7 @@ make mod-download
 make build
 make images
 make clusters
+make preload-images
 make deploy
 ```
 
