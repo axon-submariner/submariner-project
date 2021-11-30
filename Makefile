@@ -20,6 +20,7 @@ KIND_VERSION=v0.11.1
 KUBECTL_VERSION=v1.22.4
 HELM_VERSION=v3.4.1
 YQ_VERSION=4.14.1
+GOLANG_VERSION=1.17.3
 ARCH=amd64
 
 all-images:	mod-replace mod-download build images
@@ -27,17 +28,21 @@ all-images:	mod-replace mod-download build images
 ##@ Prepare
 
 git-init:	## Initialise submodules
+	@echo "If you get permisison errors, please make sure that the ssh key of this machine is properly configured in GitHub.com"
 	git submodule update --init
 
 $(BINDIR):
 	[ -x $(BINDIR) ] || mkdir -p $(BINDIR)
 
 prereqs: $(BINDIR)	## Download required utilities
+	@docker version --format 'Docker v{{.Server.Version}}' || (echo "Please install Docker Engine: https://docs.docker.com/engine/install" && exit 1)
+	@go version || (echo "Installing golang" && rm -rf go && curl -L "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz" | tar xzf - && mv go/bin/* $(BINDIR) && rm -rf go)
+	# @upx --version || (echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'" && exit 1)
+	[ -x $(BINDIR)/ ] || (curl -Lo $(BINDIR)/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}" && chmod a+x $(BINDIR)/kind)
 	[ -x $(BINDIR)/kind ] || (curl -Lo $(BINDIR)/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}" && chmod a+x $(BINDIR)/kind)
 	[ -x $(BINDIR)/kubectl ] || (curl -Lo $(BINDIR)/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && chmod a+x $(BINDIR)/kubectl)
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
-	@which upx || echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'"
 
 mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
@@ -66,17 +71,17 @@ build:	## Build all the binaries
 build:	build-lighthouse build-submariner build-subctl build-operator
 
 build-lighthouse:	## Build the lighthouse binaries
-	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh bin/lighthouse-agent pkg/agent/main.go)
-	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh bin/lighthouse-coredns pkg/coredns/main.go)
+	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh --noupx bin/lighthouse-agent pkg/agent/main.go)
+	(cd lighthouse; $(SCRIPTS_DIR)/compile.sh --noupx bin/lighthouse-coredns pkg/coredns/main.go)
 
 build-submariner:	## Build the submariner gateway binaries
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-gateway main.go)
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-globalnet pkg/globalnet/main.go)
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-route-agent pkg/routeagent_driver/main.go)
-	(cd submariner; $(SCRIPTS_DIR)/compile.sh bin/linux/amd64/submariner-networkplugin-syncer pkg/networkplugin-syncer/main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-gateway main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-globalnet pkg/globalnet/main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-route-agent pkg/routeagent_driver/main.go)
+	(cd submariner; $(SCRIPTS_DIR)/compile.sh --noupx bin/linux/amd64/submariner-networkplugin-syncer pkg/networkplugin-syncer/main.go)
 
 build-operator:		## Build the operator binaries
-	(cd submariner-operator; $(SCRIPTS_DIR)/compile.sh bin/submariner-operator main.go)
+	(cd submariner-operator; $(SCRIPTS_DIR)/compile.sh --noupx bin/submariner-operator main.go)
 
 build-subctl:	Makefile.subctl	## Build the subctl binary
 	mkdir -p submariner-operator/build
@@ -111,6 +116,11 @@ preload-images:		## Push images to development repository
 clusters:	## Create kind clusters that can be used for testing
 	@mkdir -p $(DAPPER_OUTPUT)
 	(cd submariner-operator; $(SCRIPTS_DIR)/clusters.sh $(CLUSTERS_ARGS) $(SETTINGS) )
+	
+	@echo Please run the following command to add kube contexts of the new clusters:
+	@echo export KUBECONFIG=`ls -1p -d  output/kubeconfigs/* | tr '\n' ':' | head -c -1`
+	@echo .. and then to verify: 
+	@echo kubectl config get-contexts
 
 deploy:	export DEV_VERSION=devel
 deploy:	export CUTTING_EDGE=devel
