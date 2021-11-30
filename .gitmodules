@@ -1,18 +1,24 @@
 [submodule "shipyard"]
 	path = shipyard
 	url = git@github.com:submariner-io/shipyard.git
+	ignore = dirty
 [submodule "admiral"]
 	path = admiral
 	url = git@github.com:submariner-io/admiral.git
+	ignore = dirty
 [submodule "lighthouse"]
 	path = lighthouse
 	url = git@github.com:submariner-io/lighthouse.git
+	ignore = dirty
 [submodule "submariner"]
 	path = submariner
 	url = git@github.com:submariner-io/submariner.git
+	ignore = dirty
 [submodule "submariner-operator"]
 	path = submariner-operator
 	url = git@github.com:submariner-io/submariner-operator.git
+	ignore = dirty
 [submodule "cloud-prepare"]
 	path = cloud-prepare
 	url = git@github.com:submariner-io/cloud-prepare.git
+	ignore = dirty
