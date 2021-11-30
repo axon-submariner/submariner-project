@@ -34,7 +34,7 @@ General
   help              Display this help.
 ```
 
-Command order:
+Order of `make` commands:
 
 ```
 make git-init
