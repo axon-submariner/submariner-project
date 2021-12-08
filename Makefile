@@ -58,10 +58,11 @@ mod-replace:	## Update go.mod files with local replacements
 	(cd submariner-operator; go mod edit -replace=github.com/submariner-io/submariner=../submariner)
 	(cd submariner-operator; go mod edit -replace=github.com/submariner-io/submariner/pkg/apis=../submariner/pkg/apis)
 
+mod-download:	## Download all module dependencies to go module cache
 mod-download: mod-download-admiral mod-download-cloud-prepare mod-download-lighthouse
 mod-download: mod-download-submariner mod-download-submariner-operator
 
-mod-download-%: ## Download all module dependencies to go module cache
+mod-download-%:
 	(cd $*; go mod download; go mod tidy)
 
 
@@ -116,10 +117,10 @@ preload-images:		## Push images to development repository
 clusters:	## Create kind clusters that can be used for testing
 	@mkdir -p $(DAPPER_OUTPUT)
 	(cd submariner-operator; $(SCRIPTS_DIR)/clusters.sh $(CLUSTERS_ARGS) $(SETTINGS) )
-	
+
 	@echo Please run the following command to add kube contexts of the new clusters:
 	@echo export KUBECONFIG=`ls -1p -d  output/kubeconfigs/* | tr '\n' ':' | head -c -1`
-	@echo .. and then to verify: 
+	@echo .. and then to verify:
 	@echo kubectl config get-contexts
 
 deploy:	export DEV_VERSION=devel
