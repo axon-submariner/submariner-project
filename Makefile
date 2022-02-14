@@ -119,8 +119,8 @@ clusters:	## Create kind clusters that can be used for testing
 	(cd submariner-operator; $(SCRIPTS_DIR)/clusters.sh $(CLUSTERS_ARGS) $(SETTINGS) )
 
 	@echo Please run the following command to add kube contexts of the new clusters:
-	@echo export KUBECONFIG=`ls -1p -d  output/kubeconfigs/* | tr '\n' ':' | head -c -1`
-	@echo .. and then to verify:
+	@echo export KUBECONFIG=`ls -1p -d  output/kubeconfigs/* | xargs readlink -f | tr '\n' ':' | head -c -1`
+	@echo .. and then to verify: 
 	@echo kubectl config get-contexts
 
 deploy:	export DEV_VERSION=devel
