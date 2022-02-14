@@ -27,10 +27,6 @@ all-images:	mod-replace mod-download build images
 
 ##@ Prepare
 
-git-init:	## Initialise submodules
-	@echo "If you get permisison errors, please make sure that the ssh key of this machine is properly configured in GitHub.com"
-	git submodule update --init
-
 $(BINDIR):
 	[ -x $(BINDIR) ] || mkdir -p $(BINDIR)
 
