@@ -23,6 +23,9 @@ YQ_VERSION=4.14.1
 GOLANG_VERSION=1.17.3
 ARCH=amd64
 
+SUBMARINER_IO_GH = git@github.com:submariner-io
+AXON_NET_GH = git@github.com:axon-net
+
 all-images:	mod-replace mod-download build images
 
 ##@ Prepare
@@ -39,6 +42,24 @@ prereqs: $(BINDIR)	## Download required utilities
 	[ -x $(BINDIR)/kubectl ] || (curl -Lo $(BINDIR)/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && chmod a+x $(BINDIR)/kubectl)
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
+
+.PHONY:	git-clone-repositories git-clone-admiral git-clone-cloud-prepare git-clone-lighthouse
+.PHONY: git-clone-submariner git-clone-submariner-operator git-clone-shipyard
+git-clone-repositories:	git-clone-admiral git-clone-cloud-prepare git-clone-lighthouse git-clone-submariner
+git-clone-repositories:	git-clone-submariner-operator git-clone-shipyard
+
+git-clone-%:
+	git clone $(SUBMARINER_IO_GH)/$*.git
+	git remote add axon $(AXON_NET_GH)/$*.git
+	cd ..
+
+.PHONY: git-fetch-latest git-fetch-latest-admiral git-fetch-latest-cloude-prepare git-fetch-latest-lighthouse
+.PHONY: git-fetch-latest-submariner git-fetch-latest-submariner-operator git-fetch-latest-shipyard
+git-fetch-latest: git-fetch-latest-admiral git-fetch-latest-cloude-prepare git-fetch-latest-lighthouse
+git-fetch-latest: git-fetch-latest-submariner git-fetch-latest-submariner-operator git-fetch-latest-shipyard
+
+git-fetch-latest-%: git-clone-%
+	(cd $*; git fetch upstream devel; cd ..)
 
 mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
