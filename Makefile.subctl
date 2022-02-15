@@ -32,8 +32,8 @@ deploy/submariner/crds/submariner.io_clusters.yaml \
 deploy/submariner/crds/submariner.io_endpoints.yaml \
 deploy/submariner/crds/submariner.io_gateways.yaml
 
-pkg/subctl/operator/common/embeddedyamls/yamls.go: pkg/subctl/operator/common/embeddedyamls/generators/yamls2go.go $(OPERATOR_CRDS) $(SUBMARINER_CRDS) $(shell find deploy/ -name "*.yaml") $(shell find config/rbac/ -name "*.yaml")
-	$(GO) generate pkg/subctl/operator/common/embeddedyamls/generate.go
+pkg/subctl/operator/common/embeddedyamls/yamls.go: pkg/embeddedyamls/generators/yamls2go.go $(OPERATOR_CRDS) $(SUBMARINER_CRDS) $(shell find deploy/ -name "*.yaml") $(shell find config/rbac/ -name "*.yaml")
+	$(GO) generate pkg/embeddedyamls/generate.go
 
 CONTROLLER_GEN := $(CURDIR)/bin/controller-gen
 $(CONTROLLER_GEN):

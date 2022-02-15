@@ -9,7 +9,7 @@ DAPPER_OUTPUT=$(CURDIR)/output
 export DAPPER_OUTPUT
 
 CLUSTERS_ARGS=--globalnet
-DEPLOY_ARGS=--globalnet
+DEPLOY_ARGS=--globalnet --deploytool_broker_args '--components service-discovery,connectivity'
 SETTINGS=--settings $(CURDIR)/shipyard/.shipyard.e2e.yml
 
 REPO=localhost:5000
@@ -36,7 +36,6 @@ $(BINDIR):
 prereqs: $(BINDIR)	## Download required utilities
 	@docker version --format 'Docker v{{.Server.Version}}' || (echo "Please install Docker Engine: https://docs.docker.com/engine/install" && exit 1)
 	@go version || (echo "Installing golang" && rm -rf go && curl -L "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz" | tar xzf - && mv go/bin/* $(BINDIR) && rm -rf go)
-	# @upx --version || (echo "Please install upx using 'dnf install -y upx' or 'apt install upx-ucl'" && exit 1)
 	[ -x $(BINDIR)/ ] || (curl -Lo $(BINDIR)/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}" && chmod a+x $(BINDIR)/kind)
 	[ -x $(BINDIR)/kind ] || (curl -Lo $(BINDIR)/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}" && chmod a+x $(BINDIR)/kind)
 	[ -x $(BINDIR)/kubectl ] || (curl -Lo $(BINDIR)/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && chmod a+x $(BINDIR)/kubectl)
@@ -51,7 +50,7 @@ clone-%: %/.git
 	@echo -n
 
 .SECONDARY:
-%/.git: 
+%/.git:
 	git clone $(SUBMARINER_IO_GH)/$*.git
 	@(cd $*; git remote rename origin submariner)
 	@(cd $*; git remote add axon $(AXON_NET_GH)/$*.git)
@@ -61,7 +60,7 @@ git-fetch-latest:	## Fetch latest repositories from upstream
 git-fetch-latest: fetch-latest-admiral fetch-latest-cloud-prepare fetch-latest-lighthouse
 git-fetch-latest: fetch-latest-submariner fetch-latest-submariner-operator fetch-latest-shipyard
 
-fetch-latest-%: clone-%	
+fetch-latest-%: clone-%
 	@echo -- $@ --
 	@(cd $*; git fetch submariner devel)
 
@@ -149,7 +148,7 @@ clusters:	## Create kind clusters that can be used for testing
 
 	@echo Please run the following command to add kube contexts of the new clusters:
 	@echo export KUBECONFIG=`ls -1p -d  output/kubeconfigs/* | xargs readlink -f | tr '\n' ':' | head -c -1`
-	@echo .. and then to verify: 
+	@echo .. and then to verify:
 	@echo kubectl config get-contexts
 
 deploy:	export DEV_VERSION=devel
@@ -194,7 +193,10 @@ stop-all:	## Removes the running kind clusters and kind-registry
 
 
 help: ## Display this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; \
+		printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} \
+		/^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } \
+		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 .PHONY: help
 .DEFAULT_GOAL := help
