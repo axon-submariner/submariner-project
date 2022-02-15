@@ -43,23 +43,35 @@ prereqs: $(BINDIR)	## Download required utilities
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
 
-.PHONY:	git-clone-repositories git-clone-admiral git-clone-cloud-prepare git-clone-lighthouse
-.PHONY: git-clone-submariner git-clone-submariner-operator git-clone-shipyard
-git-clone-repositories:	git-clone-admiral git-clone-cloud-prepare git-clone-lighthouse git-clone-submariner
-git-clone-repositories:	git-clone-submariner-operator git-clone-shipyard
+git-clone-repos:	## Clone repositories from submariner-io
+git-clone-repos:	clone-admiral clone-cloud-prepare clone-lighthouse clone-submariner
+git-clone-repos:	clone-submariner-operator clone-shipyard
 
-git-clone-%:
+clone-%: %/.git
+	@echo -n
+
+.SECONDARY:
+%/.git: 
 	git clone $(SUBMARINER_IO_GH)/$*.git
-	git remote add axon $(AXON_NET_GH)/$*.git
-	cd ..
+	@(cd $*; git remote rename origin submariner)
+	@(cd $*; git remote add axon $(AXON_NET_GH)/$*.git)
 
-.PHONY: git-fetch-latest git-fetch-latest-admiral git-fetch-latest-cloude-prepare git-fetch-latest-lighthouse
-.PHONY: git-fetch-latest-submariner git-fetch-latest-submariner-operator git-fetch-latest-shipyard
-git-fetch-latest: git-fetch-latest-admiral git-fetch-latest-cloude-prepare git-fetch-latest-lighthouse
-git-fetch-latest: git-fetch-latest-submariner git-fetch-latest-submariner-operator git-fetch-latest-shipyard
+#.PHONY: git-fetch-latest fetch-latest-admiral
+git-fetch-latest:	## Fetch latest repositories from upstream
+git-fetch-latest: fetch-latest-admiral fetch-latest-cloud-prepare fetch-latest-lighthouse
+git-fetch-latest: fetch-latest-submariner fetch-latest-submariner-operator fetch-latest-shipyard
 
-git-fetch-latest-%: git-clone-%
-	(cd $*; git fetch upstream devel; cd ..)
+fetch-latest-%: clone-%	
+	@echo -- $@ --
+	@(cd $*; git fetch submariner devel)
+
+remove-git-repos:	## Remove local copy of upstream repositories
+remove-git-repos: remove-admiral remove-cloud-prepare remove-lighthouse remove-submariner
+remove-git-repos: remove-operator remove-shipyard
+
+remove-%:
+	@echo -- $@ --
+	rm -rf $*
 
 mod-replace:	## Update go.mod files with local replacements
 	(cd admiral; go mod edit -replace=github.com/submariner-io/shipyard=../shipyard)
