@@ -65,7 +65,7 @@ fetch-latest-%: clone-%
 
 remove-git-repos:	## Remove local copy of upstream repositories
 remove-git-repos: remove-admiral remove-cloud-prepare remove-lighthouse remove-submariner
-remove-git-repos: remove-operator remove-shipyard
+remove-git-repos: remove-submariner-operator remove-shipyard
 
 remove-%:
 	@echo -- $@ --
