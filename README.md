@@ -38,11 +38,13 @@ General
   help             Display this help.
 ```
 
+## First Time Usage
+
 Order of `make` commands:
 
 ```sh
 make prereqs
-make git-fetch-latest # will clone if needed
+make git-clone-repos
 make mod-replace
 make mod-download
 make build
@@ -52,16 +54,17 @@ make preload-images
 make deploy
 ```
 
-## Inner development loop (e.g., for lighthouse)
+## Iterative Development
 
-```sh
-cd lighthouse 
-# make changes to code...
-cd ..
-make images
-make preload-images
-# kill relevant Pods in cluster and validate they restart with the new image
-# (imagePullPolicy should be set to Always)
-# Can also build and run out of cluster by first scaling submariner-operator to 
-# zero replicas so it does not attempt to restart killed components in-cluster
+Once you have submariner deployed, you can iteratively develop a single component. For example,
+lighthouse can be rebuilt like this:
+
 ```
+make build-lighthouse image-lighthouse preload-images
+```
+
+You can then kill the lighthouse-agent pod in a cluster and it will automatically redeploy with
+the new image. This works because the images have version `local` and `imagePullPolicy: Always`.
+
+If you want to run e.g. lighthouse-agent outside the cluster, then you need to scale both
+submariner-operator and lighthouse-agent down to zero, i.e. `replicas: 0`.
