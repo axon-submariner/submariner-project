@@ -50,13 +50,12 @@ clone-%: %/.git
 	@echo -n
 
 .SECONDARY:
-%/.git:
-	git clone $(SUBMARINER_IO_GH)/$*.git
+%/.git: 
+	@if [ ! -d  $@ ]; then (git clone $(SUBMARINER_IO_GH)/$*.git); fi
 	@(cd $*; git remote rename origin submariner)
 	@(cd $*; git remote add axon $(AXON_NET_GH)/$*.git)
 
-#.PHONY: git-fetch-latest fetch-latest-admiral
-git-fetch-latest:	## Fetch latest repositories from upstream
+git-fetch-latest:	## Fetch latest repositories from upstream, does *not* rebase
 git-fetch-latest: fetch-latest-admiral fetch-latest-cloud-prepare fetch-latest-lighthouse
 git-fetch-latest: fetch-latest-submariner fetch-latest-submariner-operator fetch-latest-shipyard
 
