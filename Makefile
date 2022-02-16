@@ -49,7 +49,7 @@ git-clone-repos:	clone-submariner-operator clone-shipyard
 clone-%: %/.git
 	@echo -n
 
-.SECONDARY:
+.SECONDARY: %/.git
 %/.git: 
 	@if [ ! -d  $@ ]; then (git clone $(SUBMARINER_IO_GH)/$*.git); fi
 	@(cd $*; git remote rename origin submariner)
