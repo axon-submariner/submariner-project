@@ -42,6 +42,8 @@ prereqs: $(BINDIR)	## Download required utilities
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
 
+# Note: these rules can probably be made simpler using a list along with call/eval make functions
+
 git-clone-repos:	## Clone repositories from submariner-io
 git-clone-repos:	clone-admiral clone-cloud-prepare clone-lighthouse clone-submariner
 git-clone-repos:	clone-submariner-operator clone-shipyard
@@ -55,13 +57,22 @@ clone-%: %/.git
 	@(cd $*; git remote rename origin submariner)
 	@(cd $*; git remote add axon $(AXON_NET_GH)/$*.git)
 
-git-fetch-latest:	## Fetch latest repositories from upstream, does *not* rebase
+git-fetch-latest:	## Fetch latest tip from upstream repositories, does *not* rebase
 git-fetch-latest: fetch-latest-admiral fetch-latest-cloud-prepare fetch-latest-lighthouse
 git-fetch-latest: fetch-latest-submariner fetch-latest-submariner-operator fetch-latest-shipyard
 
 fetch-latest-%: clone-%
 	@echo -- $@ --
 	@(cd $*; git fetch submariner devel)
+
+
+git-stable:	## Update repositories to last set tag
+git-stable: stable-admiral stable-cloud-prepare stable-lighthouse
+git-stable: stable-submariner stable-submariner-operator stable-shipyard
+
+stable-%: fetch-latest-%
+	@echo -- moving $@ to latest tag --
+	@(cd $*; TAG=$(shell git tag --sort=committerdate | tail -1); git checkout tags/$(TAG) -B $(TAG))
 
 remove-git-repos:	## Remove local copy of upstream repositories
 remove-git-repos: remove-admiral remove-cloud-prepare remove-lighthouse remove-submariner
