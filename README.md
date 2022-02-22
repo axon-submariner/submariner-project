@@ -45,8 +45,7 @@ Order of `make` commands:
 
 ```sh
 make prereqs
-make git-clone-repos
-make git-stable
+TAG=v0.12.1-m3 make git-stable # calls `git-clone-repos` target if needed
 make mod-replace
 make mod-download
 make build
