@@ -70,11 +70,11 @@ git-stable:	## Update repositories to last set tag
 git-stable: stable-admiral stable-cloud-prepare stable-lighthouse
 git-stable: stable-submariner stable-submariner-operator stable-shipyard
 
-ifndef TAG
-$(error TAG is not set, try git tag --sort=committerdate | tail -1)
-endif
 stable-%: fetch-latest-%
 	@echo -- $@ --
+ifndef TAG
+	$(error TAG is not set, try git tag --sort=committerdate | tail -1)
+endif
 	@echo -- rebasing $* based on tag $(TAG) --
 	@(cd $*; git checkout tags/$(TAG) -B $(TAG))
 
