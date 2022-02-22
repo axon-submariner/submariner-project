@@ -70,9 +70,13 @@ git-stable:	## Update repositories to last set tag
 git-stable: stable-admiral stable-cloud-prepare stable-lighthouse
 git-stable: stable-submariner stable-submariner-operator stable-shipyard
 
+ifndef TAG
+$(error TAG is not set, try git tag --sort=committerdate | tail -1)
+endif
 stable-%: fetch-latest-%
-	@echo -- moving $@ to latest tag --
-	@(cd $*; TAG=$(shell git tag --sort=committerdate | tail -1); git checkout tags/$(TAG) -B $(TAG))
+	@echo -- $@ --
+	@echo -- rebasing $* based on tag $(TAG) --
+	@(cd $*; git checkout tags/$(TAG) -B $(TAG))
 
 remove-git-repos:	## Remove local copy of upstream repositories
 remove-git-repos: remove-admiral remove-cloud-prepare remove-lighthouse remove-submariner
