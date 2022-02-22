@@ -66,7 +66,7 @@ fetch-latest-%: clone-%
 	@(cd $*; git fetch submariner devel)
 
 
-git-stable:	## Update repositories to last set tag
+git-stable:	## Update repositories to tag set in $TAG
 git-stable: stable-admiral stable-cloud-prepare stable-lighthouse
 git-stable: stable-submariner stable-submariner-operator stable-shipyard
 
