@@ -5,37 +5,40 @@ Usage:
   make <target>
 
 Prepare
-  prereqs          Download required utilities
-  git-clone-repos  Clone repositories from submariner-io
-  git-fetch-latest Fetch latest repositories from upstream, does *not* rebase
-  remove-git-repos Remove local copy of upstream repositories
-  mod-replace      Update go.mod files with local replacements
-  mod-download     Download all module dependencies to go module cache
+  prereqs             Download required utilities
+  git-clone-repos     Clone repositories from submariner-io
+  git-fetch-latest    Fetch latest repositories from upstream, does *not* rebase
+  git-stable          Update repositories to last set tag
+  mod-replace         Update go.mod files with local replacements
+  mod-download        Download all module dependencies to go module cache
 
 Build
-  build            Build all the binaries
-  build-lighthouse Build the lighthouse binaries
-  build-submariner Build the submariner gateway binaries
-  build-operator   Build the operator binaries
-  build-subctl     Build the subctl binary
-  images           Build all the images
-  image-lighthouse Build the lighthouse images
-  image-submariner Build the submariner gateway images
-  image-operator   Build the submariner operator image
-  image-nettest    Build the submariner nettest image
-  preload-images   Push images to development repository
+  build               Build all the binaries
+  build-lighthouse    Build the lighthouse binaries
+  build-submariner    Build the submariner gateway binaries
+  build-operator      Build the operator binaries
+  build-subctl        Build the subctl binary
+  images              Build all the images
+  image-lighthouse    Build the lighthouse images
+  image-submariner    Build the submariner gateway images
+  image-operator      Build the submariner operator image
+  image-nettest       Build the submariner nettest image
 
 Deployment
-  clusters         Create kind clusters that can be used for testing
-  deploy           Deploy submariner onto kind clusters
-  undeploy         Clean submariner deployment from clusters
-  pod-status       Show status of pods in kind clusters
+  preload-images      Push images to development repository
+  clusters            Create kind clusters that can be used for testing
+  deploy              Deploy submariner onto kind clusters
+  pod-status          Show status of pods in kind clusters
+
+Cleanup
+  clean               Clean up the built artifacts in all sub-repos
+  remove-git-repos    Remove local copy of upstream repositories
+  undeploy            remove submariner resources from all kind clusters
+  remove-clusters     Removes the running kind clusters
+  stop-all            Removes the running kind clusters and kind-registry
 
 General
-  clean            Clean up the built artifacts
-  stop-clusters    Removes the running kind clusters
-  stop-all         Removes the running kind clusters and kind-registry
-  help             Display this help.
+  help                Display this help.
 ```
 
 ## First Time Usage
