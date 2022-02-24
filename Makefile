@@ -45,14 +45,15 @@ prereqs: $(BINDIR)	## Download required utilities
 	[ -x $(BINDIR)/yq ] || (curl -Lo $(BINDIR)/yq "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${ARCH}" && chmod a+x $(BINDIR)/yq)
 	[ -x $(BINDIR)/helm ] || (curl -L "https://get.helm.sh/helm-$(HELM_VERSION)-linux-$(ARCH).tar.gz" | tar xzf - && mv linux-$(ARCH)/helm $(BINDIR) && rm -rf linux-$(ARCH))
 
+# Note: these rules can probably be made simpler using a list along with call/eval make functions
+
 git-clone-repos:	## Clone repositories from submariner-io
-git-clone-repos:	clone-admiral clone-cloud-prepare clone-lighthouse clone-submariner
-git-clone-repos:	clone-submariner-operator clone-shipyard
+git-clone-repos:	git-clone-admiral git-clone-cloud-prepare git-clone-lighthouse git-clone-submariner
+git-clone-repos:	git-clone-submariner-operator git-clone-shipyard
 	@echo -- $@ --
 
-clone-%: %/.git
+git-clone-%: %/.git
 	@echo -- $@ --
-	@echo -n
 
 .SECONDARY: %/.git
 %/.git: 
@@ -61,25 +62,27 @@ clone-%: %/.git
 	@(cd $*; git remote rename origin submariner)
 	@(cd $*; git remote add axon $(AXON_NET_GH)/$*.git)
 
-git-fetch-latest:	## Fetch latest repositories from upstream, does *not* rebase
-git-fetch-latest: fetch-latest-admiral fetch-latest-cloud-prepare fetch-latest-lighthouse
-git-fetch-latest: fetch-latest-submariner fetch-latest-submariner-operator fetch-latest-shipyard
+git-fetch-latest:	## Fetch latest tip from upstream repositories, does *not* rebase
+git-fetch-latest: git-fetch-latest-admiral git-fetch-latest-cloud-prepare git-fetch-latest-lighthouse
+git-fetch-latest: git-fetch-latest-submariner git-fetch-latest-submariner-operator git-fetch-latest-shipyard
 	@echo -- $@ --
 
-fetch-latest-%: clone-%
+git-fetch-latest-%: git-clone-%
 	@echo -- $@ --
 	@(cd $*; git fetch submariner devel)
 
-git-stable:	## Update repositories to last set tag
-git-stable: stable-admiral stable-cloud-prepare stable-lighthouse
-git-stable: stable-submariner stable-submariner-operator stable-shipyard
+git-stable:	## Update repositories to tag set in $TAG
+git-stable: git-stable-admiral git-stable-cloud-prepare git-stable-lighthouse
+git-stable: git-stable-submariner git-stable-submariner-operator git-stable-shipyard
 	@echo -- $@ --
 
-TAG?=$(shell git tag --sort=committerdate | tail -1)
-stable-%: fetch-latest-%
+git-stable-%: git-fetch-latest-%
 	@echo -- $@ --
-	@echo -- rebasing $@ based on tag $(TAG) --
-	@(cd $*; git checkout tags/$$TAG -B $$TAG;)
+ifndef TAG
+	$(error TAG is not set, try git tag --sort=committerdate | tail -1)
+endif
+	@echo -- rebasing $* based on tag $(TAG) --
+	@(cd $*; git checkout tags/$(TAG) -B $(TAG))
 
 mod-replace:	## Update go.mod files with local replacements
 	@echo -- $@ --
@@ -99,6 +102,7 @@ mod-replace:	## Update go.mod files with local replacements
 mod-download:	## Download all module dependencies to go module cache
 mod-download: mod-download-admiral mod-download-cloud-prepare mod-download-lighthouse
 mod-download: mod-download-submariner mod-download-submariner-operator
+	@echo -- $@ --
 
 mod-download-%:
 	@echo -- $@ --
@@ -187,7 +191,7 @@ pod-status:	## Show status of pods in kind clusters
 
 ##@ Cleanup
 
-clean:	## Clean up the built artifacts in all sub-repos
+remove-artifacts:	## Clean up the built artifacts in all sub-repos
 	@echo -- $@ --
 	rm -f lighthouse/bin/lighthouse-agent
 	rm -f lighthouse/bin/lighthouse-coredns
@@ -201,13 +205,12 @@ clean:	## Clean up the built artifacts in all sub-repos
 	rm -rf submariner-operator/deploy/submariner
 	rm -f submariner-operator/pkg/subctl/operator/common/embeddedyamls/yamls.go
 
-remove-git-repos:	## Remove local copy of upstream repositories
+remove-repos:	## Remove local copy of upstream repositories
+remove-repos: remove-repo-admiral remove-repo-cloud-prepare remove-repo-lighthouse remove-repo-submariner
+remove-repos: remove-repo-submariner-operator remove-repo-shipyard
 	@echo -- $@ --
-	
-remove-git-repos: remove-admiral remove-cloud-prepare remove-lighthouse remove-submariner
-remove-git-repos: remove-submariner-operator remove-shipyard
 
-remove-%:
+remove-repo-%:
 	@echo -- $@ --
 	rm -rf $*
 

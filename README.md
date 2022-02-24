@@ -7,8 +7,8 @@ Usage:
 Prepare
   prereqs             Download required utilities
   git-clone-repos     Clone repositories from submariner-io
-  git-fetch-latest    Fetch latest repositories from upstream, does *not* rebase
-  git-stable          Update repositories to last set tag
+  git-fetch-latest    Fetch latest tip from upstream repositories, does *not* rebase
+  git-stable          Update repositories to tag set in $TAG
   mod-replace         Update go.mod files with local replacements
   mod-download        Download all module dependencies to go module cache
 
@@ -31,8 +31,8 @@ Deployment
   pod-status          Show status of pods in kind clusters
 
 Cleanup
-  clean               Clean up the built artifacts in all sub-repos
-  remove-git-repos    Remove local copy of upstream repositories
+  remove-artifacts    Clean up the built artifacts in all sub-repos
+  remove-repos        Remove local copy of upstream repositories
   undeploy            remove submariner resources from all kind clusters
   remove-clusters     Removes the running kind clusters
   stop-all            Removes the running kind clusters and kind-registry
@@ -47,7 +47,7 @@ Order of `make` commands:
 
 ```sh
 make prereqs
-make git-clone-repos
+TAG=v0.12.1-m3 make git-stable # calls `git-clone-repos` target if needed
 make mod-replace
 make mod-download
 make build
@@ -59,10 +59,10 @@ make deploy
 
 ## Iterative Development
 
-Once you have submariner deployed, you can iteratively develop a single component. For example,
-lighthouse can be rebuilt like this:
+Once you have submariner deployed, you can iteratively develop a single component after
+branching from the stable tag. For example, lighthouse can be rebuilt like this:
 
-```
+```sh
 make build-lighthouse image-lighthouse preload-images
 ```
 
@@ -71,3 +71,9 @@ the new image. This works because the images have version `local` and `imagePull
 
 If you want to run e.g. lighthouse-agent outside the cluster, then you need to scale both
 submariner-operator and lighthouse-agent down to zero, i.e. `replicas: 0`.
+
+If needed, you may periodically fetch the latest code from the repositories (without a
+rebase) by calling `make git-fetch-latest`.
+
+> Note: running `make git-stable` will force align your repository head to the tag and
+> should not be done without saving/stashing pending changes.
