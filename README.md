@@ -9,7 +9,6 @@ Prepare
   git-clone-repos     Clone repositories from submariner-io
   git-fetch-latest    Fetch latest tip from upstream repositories, does *not* rebase
   git-stable          Update repositories to tag set in $TAG
-  remove-git-repos    Remove local copy of upstream repositories
   mod-replace         Update go.mod files with local replacements
   mod-download        Download all module dependencies to go module cache
 
@@ -24,18 +23,21 @@ Build
   image-submariner    Build the submariner gateway images
   image-operator      Build the submariner operator image
   image-nettest       Build the submariner nettest image
-  preload-images      Push images to development repository
 
 Deployment
+  preload-images      Push images to development repository
   clusters            Create kind clusters that can be used for testing
   deploy              Deploy submariner onto kind clusters
-  undeploy            Clean submariner deployment from clusters
   pod-status          Show status of pods in kind clusters
 
-General
-  clean               Clean up the built artifacts
-  stop-clusters       Removes the running kind clusters
+Cleanup
+  remove-artifacts    Clean up the built artifacts in all sub-repos
+  remove-repos        Remove local copy of upstream repositories
+  undeploy            remove submariner resources from all kind clusters
+  remove-clusters     Removes the running kind clusters
   stop-all            Removes the running kind clusters and kind-registry
+
+General
   help                Display this help.
 ```
 
